@@ -47,19 +47,22 @@ func (ic *ImageController) UploadImage(c *gin.Context) {
 	buffer := make([]byte, 512) // Why 512 bytes? See http://golang.org/pkg/net/http/#DetectContentType
 	_, err = fileHeader.Read(buffer)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+		res.Message = "file not found"
+		c.JSON(http.StatusInternalServerError, res)
 		return
 	}
 
 	contentType := http.DetectContentType(buffer)
 	if contentType != "image/jpeg" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "image is wrong (not *.jpg | *.jpeg, more than 2MB or less than 10KB)"})
+		res.Message = "image is wrong (not *.jpg | *.jpeg, more than 2MB or less than 10KB)"
+		c.JSON(http.StatusBadRequest, res)
 		return
 	}
 
 	fileBuffer, err := file.Open()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "file not found"})
+		res.Message = "file not found"
+		c.JSON(http.StatusBadRequest, res)
 		return
 	}
 	fileBuffer.Close()
@@ -68,7 +71,8 @@ func (ic *ImageController) UploadImage(c *gin.Context) {
 
 	_, err = ic.s3Service.UploadFile(objKey, fileBuffer, contentType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+		res.Message = "failed to upload image"
+		c.JSON(http.StatusInternalServerError, res.Message)
 	}
 
 	data.Url = ic.s3Service.GetObjectWithUrl(objKey)

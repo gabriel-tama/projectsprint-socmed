@@ -36,7 +36,6 @@ func Init(ctx context.Context) error {
 	var err error
 
 	PgPool, err = pgxpool.NewWithConfig(context.Background(), Config(GetPostgresURL()))
-
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)

@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupImageRoutes(r *gin.RouterGroup, controller *ImageController, jwtService *jwt.JWTService) {
+func NewImageRouter(r *gin.RouterGroup, controller *ImageController, jwtService *jwt.JWTService) {
 	router := r.Group("/image")
 	router.Use(middleware.AuthorizeJWT(*jwtService))
 
