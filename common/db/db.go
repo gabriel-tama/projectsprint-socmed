@@ -36,7 +36,7 @@ func Init(ctx context.Context) error {
 	var err error
 
 	PgPool, err = pgxpool.NewWithConfig(context.Background(), Config(GetPostgresURL()))
-	
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)
@@ -45,20 +45,18 @@ func Init(ctx context.Context) error {
 	return nil
 }
 
-func Config(DATABASE_URL string) (*pgxpool.Config) {
+func Config(DATABASE_URL string) *pgxpool.Config {
 	const defaultMaxConns = int32(4)
 	const defaultMinConns = int32(0)
 	const defaultMaxConnLifetime = time.Hour
 	const defaultMaxConnIdleTime = time.Minute * 30
 	const defaultHealthCheckPeriod = time.Minute
 	const defaultConnectTimeout = time.Second * 5
-	
 
 	// Your own Database URL
-
 	dbConfig, err := pgxpool.ParseConfig(DATABASE_URL)
-	if err!=nil {
-	log.Fatal("Failed to create a config, error: ", err)
+	if err != nil {
+		log.Fatal("Failed to create a config, error: ", err)
 	}
 
 	dbConfig.MaxConns = defaultMaxConns
@@ -69,21 +67,21 @@ func Config(DATABASE_URL string) (*pgxpool.Config) {
 	dbConfig.ConnConfig.ConnectTimeout = defaultConnectTimeout
 
 	dbConfig.BeforeAcquire = func(ctx context.Context, c *pgx.Conn) bool {
-	log.Println("Before acquiring the connection pool to the database!!")
-	return true
+		log.Println("Before acquiring the connection pool to the database!!")
+		return true
 	}
 
 	dbConfig.AfterRelease = func(c *pgx.Conn) bool {
-	log.Println("After releasing the connection pool to the database!!")
-	return true
+		log.Println("After releasing the connection pool to the database!!")
+		return true
 	}
 
 	dbConfig.BeforeClose = func(c *pgx.Conn) {
-	log.Println("Closed the connection pool to the database!!")
+		log.Println("Closed the connection pool to the database!!")
 	}
 
 	return dbConfig
-}	
+}
 
 func Close(ctx context.Context) {
 	PgPool.Close()
