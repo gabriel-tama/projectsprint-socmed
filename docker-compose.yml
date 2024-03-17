@@ -1,0 +1,157 @@
+version: "3.9"
+
+networks:
+  k6:
+  influxdb:
+  grafana:
+  mynet:
+    driver: bridge
+
+services:
+  app:
+    container_name: projectsprint-socmed
+    depends_on:
+      - db
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - ${PORT}:${PORT}
+    environment:
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - DB_HOST=db
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+
+      - PORT=${PORT}
+      - HOST=${HOST}
+
+      - PROMETHEUS_ADDRESS=${PROMETHEUS_ADDRESS}
+
+      - JWT_SECRET=${JWT_SECRET}
+      - BCRYPT_SALT=${BCRYPT_SALT}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+
+      - S3_ID=${S3_ID}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_BASE_URL=${S3_BASE_URL}
+      - S3_REGION=${S3_REGION}
+
+      - GIN_MODE=release
+    networks:
+      - mynet
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  migrate:
+    image: migrate/migrate
+    depends_on:
+      - db
+    volumes:
+      - ./db/migrations:/database
+    command:
+      [
+        "-path",
+        "/database",
+        "-database",
+        "postgres://${DB_USERNAME}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable",
+        "up",
+      ]
+    networks:
+      - mynet
+
+  db:
+    image: postgres:latest
+    restart: unless-stopped
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    hostname: db
+    ports:
+      - ${DB_PORT}:5432
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USERNAME} -d ${DB_NAME} -h localhost -p 5432",
+        ]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - mynet
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    networks:
+      - mynet
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+
+  influxdb:
+    image: influxdb:2.0-alpine
+    networks:
+      - k6
+      - grafana
+      - influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=croco
+      - DOCKER_INFLUXDB_INIT_PASSWORD=password1
+      - DOCKER_INFLUXDB_INIT_ORG=k6io
+      - DOCKER_INFLUXDB_INIT_BUCKET=demo
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=EEKpryGZk8pVDXmIuy484BKUxM5jOEDv7YNoeNZUbsNbpbPbP6kK_qY9Zsyw7zNnlZ7pHG16FYzNaqwLMBUz8g==
+
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:8.2.6
+    networks:
+      - grafana
+      - influxdb
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_BASIC_ENABLED=false
+    volumes:
+      - ./test/grafana:/etc/grafana/provisioning/
+    restart: unless-stopped
+
+  k6:
+    build:
+      context: .
+      dockerfile: Dockerfile.k6
+
+    container_name: projectsprint-socmed-k6
+    networks:
+      - k6
+      - mynet
+    ports:
+      - "6565:6565"
+    environment:
+      - K6_OUT=xk6-influxdb=http://influxdb:8086
+      - K6_INFLUXDB_ORGANIZATION=k6io
+      - K6_INFLUXDB_BUCKET=demo
+      - K6_INFLUXDB_INSECURE=true
+        # NOTE: This is an Admin token, it's not suggested to use this configuration in production.
+        # Instead, use a Token with restricted privileges.
+      - K6_INFLUXDB_TOKEN=EEKpryGZk8pVDXmIuy484BKUxM5jOEDv7YNoeNZUbsNbpbPbP6kK_qY9Zsyw7zNnlZ7pHG16FYzNaqwLMBUz8g==
+    volumes:
+      - ./test/k6:/scripts
+    depends_on:
+      - influxdb
+      - app
