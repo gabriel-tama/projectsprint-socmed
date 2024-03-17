@@ -5,18 +5,16 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gabriel-tama/projectsprint-socmed/common/jwt"
 	"github.com/gabriel-tama/projectsprint-socmed/common/response"
 	"github.com/gin-gonic/gin"
 )
 
 type ImageController struct {
-	jwtService *jwt.JWTService
-	s3Service  S3Service
+	s3Service S3Service
 }
 
-func NewImageController(jwtService *jwt.JWTService, s3Service S3Service) *ImageController {
-	return &ImageController{jwtService: jwtService, s3Service: s3Service}
+func NewImageController(s3Service S3Service) *ImageController {
+	return &ImageController{s3Service: s3Service}
 }
 
 func (ic *ImageController) UploadImage(c *gin.Context) {
