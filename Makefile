@@ -1,7 +1,7 @@
 include .env
 
 migration_dir ?= "common/db/migrations"
-migration_source ?= "file://$(migration_source)"
+migration_source ?= "file://$(migration_dir)"
 migration_destination ?= "postgres://$(DB_USERNAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable"
 
 # Takes the first target as command
