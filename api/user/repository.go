@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/gabriel-tama/projectsprint-socmed/common/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Repository interface {
@@ -16,11 +16,11 @@ type Repository interface {
 }
 
 type dbRepository struct {
-	db          *pgxpool.Pool
+	db          *db.DB
 	BCRYPT_SALT int
 }
 
-func NewRepository(db *pgxpool.Pool, BCRYPT_SALT int) Repository {
+func NewRepository(db *db.DB, BCRYPT_SALT int) Repository {
 	return &dbRepository{db: db, BCRYPT_SALT: BCRYPT_SALT}
 }
 
@@ -41,7 +41,7 @@ func (d *dbRepository) Create(ctx context.Context, user *User) error {
 		stmt = stmt + "phoneNumber) "
 	}
 	stmt = stmt + `VALUES ($1, $2, $3) RETURNING id`
-	row := d.db.QueryRow(ctx, stmt, user.Name, user.Password, user.Credential)
+	row := d.db.Pool.QueryRow(ctx, stmt, user.Name, user.Password, user.Credential)
 	err := row.Scan(&user.ID)
 	var pgErr *pgconn.PgError
 	if err != nil {
@@ -67,7 +67,7 @@ func (d *dbRepository) FindByCredential(ctx context.Context, user *User) error {
 		stmt = stmt + "phoneNumber " + "FROM users WHERE phoneNumber"
 	}
 	stmt = stmt + "=$1 "
-	row := d.db.QueryRow(ctx, stmt, user.Credential)
+	row := d.db.Pool.QueryRow(ctx, stmt, user.Credential)
 	err := row.Scan(&user.ID, &user.Name, &user.Password)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrUserNotFound

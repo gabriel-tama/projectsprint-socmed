@@ -13,7 +13,9 @@ import (
 	C "github.com/gabriel-tama/projectsprint-socmed/common/config"
 )
 
-var PgPool *pgxpool.Pool
+type DB struct {
+	Pool *pgxpool.Pool
+}
 
 func GetPostgresURL() string {
 	env, err := C.Get()
@@ -30,18 +32,6 @@ func GetPostgresURL() string {
 
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPass,
 		dbHost, dbPort, dbName)
-}
-
-func Init(ctx context.Context) error {
-	var err error
-
-	PgPool, err = pgxpool.NewWithConfig(context.Background(), Config(GetPostgresURL()))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-		os.Exit(1)
-	}
-
-	return nil
 }
 
 func Config(DATABASE_URL string) *pgxpool.Config {
@@ -82,6 +72,37 @@ func Config(DATABASE_URL string) *pgxpool.Config {
 	return dbConfig
 }
 
-func Close(ctx context.Context) {
-	PgPool.Close()
+func Init(ctx context.Context) (*DB, error) {
+	PgPool, err := pgxpool.NewWithConfig(context.Background(), Config(GetPostgresURL()))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+		return nil, err
+	}
+
+	return &DB{Pool: PgPool}, nil
+}
+
+func (db *DB) DB() *DB {
+
+	return db
+}
+
+func (db *DB) StartTx(ctx context.Context, f func(pgx.Tx) error) error {
+	tx, err := db.Pool.BeginTx(ctx, pgx.TxOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	err = f(tx)
+	if err != nil {
+		tx.Rollback(ctx)
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (db *DB) Close(ctx context.Context) {
+	db.Pool.Close()
 }
