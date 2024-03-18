@@ -10,5 +10,6 @@ func NewRouter(r *gin.RouterGroup, controller *Controller, jwtService *jwt.JWTSe
 
 	{
 		router.POST("/register", controller.CreateUser)
+		router.POST("/login", controller.LoginUser)
 	}
 }
