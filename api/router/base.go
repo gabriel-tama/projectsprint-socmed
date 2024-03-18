@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/gabriel-tama/projectsprint-socmed/api/friend"
 	"github.com/gabriel-tama/projectsprint-socmed/api/image"
 	"github.com/gabriel-tama/projectsprint-socmed/api/user"
 	"github.com/gabriel-tama/projectsprint-socmed/common/jwt"
@@ -16,9 +17,10 @@ var (
 )
 
 type RouterParam struct {
-	ImageController *image.ImageController
-	UserController  *user.Controller
-	JwtService      *jwt.JWTService
+	JwtService       *jwt.JWTService
+	ImageController  *image.ImageController
+	UserController   *user.Controller
+	FriendController *friend.Controller
 }
 
 func leakBucket() gin.HandlerFunc {
@@ -44,6 +46,7 @@ func SetupRouter(param RouterParam) *gin.Engine {
 	{
 		user.NewRouter(v1, param.UserController, param.JwtService)
 		image.NewImageRouter(v1, param.ImageController, param.JwtService)
+		friend.NewRouter(v1, param.FriendController, param.JwtService)
 	}
 
 	router.GET("/rate", func(c *gin.Context) {

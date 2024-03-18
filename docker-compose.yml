@@ -52,7 +52,7 @@ services:
     depends_on:
       - db
     volumes:
-      - ./db/migrations:/database
+      - ./common/db/migrations:/database
     command:
       [
         "-path",
