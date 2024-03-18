@@ -1,0 +1,5 @@
+DROP INDEX IF EXISTS tags_index;
+
+DROP TABLE IF EXISTS post_tags;
+
+DROP TABLE IF EXISTS posts;
