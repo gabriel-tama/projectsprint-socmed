@@ -3,13 +3,13 @@ module github.com/gabriel-tama/projectsprint-socmed
 go 1.22.1
 
 require (
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.7
 	github.com/gin-gonic/gin v1.9.1
 	github.com/joho/godotenv v1.5.1
 )
 
 require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.1 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.7 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.15.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.3 // indirect
@@ -57,7 +57,7 @@ require (
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/arch v0.3.0 // indirect
-	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/crypto v0.17.0
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

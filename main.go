@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gabriel-tama/projectsprint-socmed/api/friend"
 	"github.com/gabriel-tama/projectsprint-socmed/api/image"
+	"github.com/gabriel-tama/projectsprint-socmed/api/post"
 	"github.com/gabriel-tama/projectsprint-socmed/api/router"
 	"github.com/gabriel-tama/projectsprint-socmed/api/user"
 	C "github.com/gabriel-tama/projectsprint-socmed/common/config"
@@ -23,29 +25,36 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	dbErr := psql.Init(context.Background())
+	db, dbErr := psql.Init(context.Background())
 	if dbErr != nil {
 		log.Fatal(dbErr)
 	}
-	defer psql.Close(context.Background())
+	defer db.Close(context.Background())
 
 	// Repository/Models
-
-	userRepository := user.NewRepository(psql.PgPool, env.BCRYPT_Salt)
+	userRepository := user.NewRepository(db, env.BCRYPT_Salt)
+	friendRepository := friend.NewRepository(db)
+	postRepository := post.NewRepository(db)
 
 	// Services
 	s3Service := image.NewS3Service(env.S3ID, env.S3Secret, env.S3Bucket, env.S3Url)
 	jwtService := jwt.NewJWTService(env.JWTSecret, env.JWTExp)
 	userService := user.NewService(userRepository, jwtService)
+	friendService := friend.NewService(friendRepository, jwtService)
+	postService := post.NewService(postRepository, jwtService)
 
 	// Controllers
 	imgController := image.NewImageController(s3Service)
 	userController := user.NewController(userService)
+	friendControler := friend.NewController(friendService)
+	postController := post.NewController(postService)
 
 	router := router.SetupRouter(router.RouterParam{
-		JwtService:      &jwtService,
-		ImageController: imgController,
-		UserController:  userController,
+		JwtService:       &jwtService,
+		ImageController:  imgController,
+		UserController:   userController,
+		FriendController: friendControler,
+		PostController:   postController,
 	})
 
 	router.GET("/ping", func(c *gin.Context) {

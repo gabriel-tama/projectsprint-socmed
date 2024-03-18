@@ -8,6 +8,7 @@ import (
 
 type Post struct {
 	ID         uint64
+	UserId     uint64
 	PostInHtml string
 	Tags       []string
 	CreatedAt  time.Time

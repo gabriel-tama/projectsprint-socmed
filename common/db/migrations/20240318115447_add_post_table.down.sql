@@ -1,4 +1,4 @@
-DROP INDEX IF EXISTS tags_index;
+DROP INDEX IF EXISTS post_id_idx;
 
 DROP TABLE IF EXISTS post_tags;
 
