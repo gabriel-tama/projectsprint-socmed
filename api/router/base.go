@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gabriel-tama/projectsprint-socmed/api/image"
+	"github.com/gabriel-tama/projectsprint-socmed/api/user"
 	"github.com/gabriel-tama/projectsprint-socmed/common/jwt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/ratelimit"
@@ -16,6 +17,7 @@ var (
 
 type RouterParam struct {
 	ImageController *image.ImageController
+	UserController  *user.Controller
 	JwtService      *jwt.JWTService
 }
 
@@ -40,6 +42,7 @@ func SetupRouter(param RouterParam) *gin.Engine {
 	// Setup API version 1 routes
 	v1 := router.Group("/v1")
 	{
+		user.NewRouter(v1, param.UserController, param.JwtService)
 		image.NewImageRouter(v1, param.ImageController, param.JwtService)
 	}
 
