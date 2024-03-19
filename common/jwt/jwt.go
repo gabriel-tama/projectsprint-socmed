@@ -37,7 +37,7 @@ var (
 func (jwtService *jwtServiceImpl) CreateToken(user_id int) (string, error) {
 	claim := JWTClaims{
 		UserID: user_id,
-		Exp:    int(time.Now().Add(time.Hour * 2).Unix()),
+		Exp:    int(time.Now().Add(time.Hour * 24).Unix()),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

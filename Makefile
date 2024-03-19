@@ -10,7 +10,7 @@ Command := $(firstword $(MAKECMDGOALS))
 Arguments := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
 migrate-create:
-	migrate create -ext sql -dir $(migration_dir) -seq $(Arguments)
+	migrate create -ext sql -dir $(migration_dir)  $(Arguments)
 
 migrate-up:
 	migrate -source $(migration_source) -database $(migration_destination) up

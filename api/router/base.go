@@ -4,8 +4,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/gabriel-tama/projectsprint-socmed/api/comment"
 	"github.com/gabriel-tama/projectsprint-socmed/api/friend"
 	"github.com/gabriel-tama/projectsprint-socmed/api/image"
+	"github.com/gabriel-tama/projectsprint-socmed/api/post"
 	"github.com/gabriel-tama/projectsprint-socmed/api/user"
 	"github.com/gabriel-tama/projectsprint-socmed/common/jwt"
 	"github.com/gin-gonic/gin"
@@ -17,10 +19,12 @@ var (
 )
 
 type RouterParam struct {
-	JwtService       *jwt.JWTService
-	ImageController  *image.ImageController
-	UserController   *user.Controller
-	FriendController *friend.Controller
+	JwtService        *jwt.JWTService
+	ImageController   *image.ImageController
+	UserController    *user.Controller
+	FriendController  *friend.Controller
+	PostController    *post.Controller
+	CommentController *comment.Controller
 }
 
 func leakBucket() gin.HandlerFunc {
@@ -47,6 +51,8 @@ func SetupRouter(param RouterParam) *gin.Engine {
 		user.NewRouter(v1, param.UserController, param.JwtService)
 		image.NewImageRouter(v1, param.ImageController, param.JwtService)
 		friend.NewRouter(v1, param.FriendController, param.JwtService)
+		post.NewRouter(v1, param.PostController, param.JwtService)
+		comment.NewRouter(v1, param.CommentController, param.JwtService)
 	}
 
 	router.GET("/rate", func(c *gin.Context) {

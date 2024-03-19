@@ -72,6 +72,9 @@ func (s *userService) FindByCredential(ctx context.Context, req LoginUserPayload
 		Credential:     req.CredentialValue,
 	}
 	err = s.repository.FindByCredential(ctx, user)
+	if err != nil {
+		return nil, err
+	}
 	match, err := password.Matches(req.Password, user.Password)
 
 	if err != nil {

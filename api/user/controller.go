@@ -36,6 +36,11 @@ func (c *Controller) CreateUser(ctx *gin.Context) {
 		return
 	}
 
+	if errors.Is(err, ErrWrongPassword) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "validation error"})
+		return
+	}
+
 	if err != nil {
 		fmt.Println(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "server error"})
