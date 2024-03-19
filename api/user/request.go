@@ -92,3 +92,32 @@ func (p LoginUserPayload) CredentialByEmail() bool {
 	}
 	return false
 }
+
+type LinkEmailPayload struct {
+	Email string `json:"email" binding:"required"`
+}
+
+func (p LinkEmailPayload) Validate() error {
+	var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	if !emailRegex.MatchString(p.Email) {
+		return fmt.Errorf("invalid email format")
+	}
+	return nil
+}
+
+type LinkPhonePayload struct {
+	Phone string `json:"required binding:"required"`
+}
+
+func (p LinkPhonePayload) Validate() error {
+	var phoneRegex = regexp.MustCompile(`^\+\d{7,13}$`)
+	if !phoneRegex.MatchString(p.Phone) {
+		return fmt.Errorf("invalid phone format")
+	}
+	return nil
+}
+
+type UpdateAccountPayload struct {
+	ImageURL string `json:"imageUrl" binding:"required,url"`
+	Name     string `json:"name" binding:"required,min=5,max=50"`
+}

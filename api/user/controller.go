@@ -83,3 +83,101 @@ func (c *Controller) LoginUser(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "success logged in", "data": data})
 }
+
+func (c *Controller) LinkEmail(ctx *gin.Context) {
+	var req LinkEmailPayload
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
+		return
+	}
+
+	err := c.service.LinkEmail(ctx, req)
+
+	if errors.Is(err, ErrInvalidToken) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+		return
+	}
+
+	if errors.Is(err, ErrEmailAlreadyExists) {
+		ctx.JSON(http.StatusConflict, gin.H{"message": err.Error()})
+		return
+	}
+
+	if errors.Is(err, ErrWrongRoute) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if errors.Is(err, ErrValidationFailed) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "succesfully link email"})
+
+}
+
+func (c *Controller) LinkPhone(ctx *gin.Context) {
+	var req LinkPhonePayload
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
+		return
+	}
+
+	err := c.service.LinkPhone(ctx, req)
+
+	if errors.Is(err, ErrInvalidToken) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "token is missing or invalid"})
+		return
+	}
+
+	if errors.Is(err, ErrPhoneAlreadyExists) {
+		ctx.JSON(http.StatusConflict, gin.H{"message": "email already exist"})
+		return
+	}
+
+	if errors.Is(err, ErrWrongRoute) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "succesfully link email"})
+
+}
+
+func (c *Controller) UpdateAccount(ctx *gin.Context) {
+	var req UpdateAccountPayload
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
+		return
+	}
+
+	err := c.service.UpdateAccount(ctx, req)
+	if errors.Is(err, ErrInvalidToken) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "successfully update user profile"})
+}
