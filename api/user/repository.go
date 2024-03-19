@@ -13,6 +13,8 @@ type Repository interface {
 	Create(ctx context.Context, user *User) error
 	GetSalt() int
 	FindByCredential(ctx context.Context, user *User) error
+	AddEmail(ctx context.Context, email string, user_id int) error
+	AddPhone(ctx context.Context, phone string, user_id int) error
 }
 
 type dbRepository struct {
@@ -77,5 +79,37 @@ func (d *dbRepository) FindByCredential(ctx context.Context, user *User) error {
 	}
 
 	return nil
+
+}
+
+func (d *dbRepository) AddEmail(ctx context.Context, email string, user_id int) error {
+	result, err := d.db.Pool.Exec(ctx, "UPDATE users SET email=$1 WHERE id=$2 AND email IS NULL", email, user_id)
+	var pgErr *pgconn.PgError
+
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		return ErrEmailAlreadyExists
+	}
+
+	if result.RowsAffected() == 0 {
+		return ErrWrongRoute
+	}
+
+	return err
+
+}
+
+func (d *dbRepository) AddPhone(ctx context.Context, phone string, user_id int) error {
+	result, err := d.db.Pool.Exec(ctx, "UPDATE users SET phoneNumber=$1 WHERE id=$2 AND phoneNumber IS NULL", phone, user_id)
+	var pgErr *pgconn.PgError
+
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		return ErrPhoneAlreadyExists
+	}
+
+	if result.RowsAffected() == 0 {
+		return ErrWrongRoute
+	}
+
+	return err
 
 }

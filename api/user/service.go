@@ -6,11 +6,14 @@ import (
 
 	"github.com/gabriel-tama/projectsprint-socmed/common/jwt"
 	"github.com/gabriel-tama/projectsprint-socmed/common/password"
+	"github.com/gin-gonic/gin"
 )
 
 type Service interface {
 	Create(ctx context.Context, req CreateUserPayload) (*UserResponse, error)
 	FindByCredential(ctx context.Context, req LoginUserPayload) (*UserResponse, error)
+	LinkEmail(ctx *gin.Context, req LinkEmailPayload) error
+	LinkPhone(ctx *gin.Context, req LinkPhonePayload) error
 }
 
 type userService struct {
@@ -102,5 +105,38 @@ func (s *userService) FindByCredential(ctx context.Context, req LoginUserPayload
 		Phone:       req.CredentialValue,
 		AccessToken: accessToken,
 	}, nil
+
+}
+
+func (s *userService) LinkEmail(ctx *gin.Context, req LinkEmailPayload) error {
+
+	headerToken := ctx.GetHeader("Authorization")
+	token, err := s.jwtService.GetPayload(headerToken)
+	if err != nil {
+		return ErrInvalidToken
+	}
+
+	err = req.Validate()
+	if err != nil {
+		return ErrValidationFailed
+	}
+
+	return s.repository.AddEmail(ctx, req.Email, token.UserID)
+
+}
+
+func (s *userService) LinkPhone(ctx *gin.Context, req LinkPhonePayload) error {
+	headerToken := ctx.GetHeader("Authorization")
+	token, err := s.jwtService.GetPayload(headerToken)
+	if err != nil {
+		return ErrInvalidToken
+	}
+
+	err = req.Validate()
+	if err != nil {
+		return ErrValidationFailed
+	}
+
+	return s.repository.AddPhone(ctx, req.Phone, token.UserID)
 
 }

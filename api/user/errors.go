@@ -9,4 +9,8 @@ var (
 	ErrValidationFailed      = errors.New("validation failed")
 	ErrCredentialType        = errors.New("invalid cred type")
 	ErrCredentialValue       = errors.New("invalid cred value")
+	ErrEmailAlreadyExists    = errors.New("email already exists")
+	ErrPhoneAlreadyExists    = errors.New("phone already exists")
+	ErrInvalidToken          = errors.New("token invalid or missing")
+	ErrWrongRoute            = errors.New("cant use this route to update")
 )
