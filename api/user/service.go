@@ -14,6 +14,7 @@ type Service interface {
 	FindByCredential(ctx context.Context, req LoginUserPayload) (*UserResponse, error)
 	LinkEmail(ctx *gin.Context, req LinkEmailPayload) error
 	LinkPhone(ctx *gin.Context, req LinkPhonePayload) error
+	UpdateAccount(ctx *gin.Context, req UpdateAccountPayload) error
 }
 
 type userService struct {
@@ -138,5 +139,16 @@ func (s *userService) LinkPhone(ctx *gin.Context, req LinkPhonePayload) error {
 	}
 
 	return s.repository.AddPhone(ctx, req.Phone, token.UserID)
+
+}
+
+func (s *userService) UpdateAccount(ctx *gin.Context, req UpdateAccountPayload) error {
+	headerToken := ctx.GetHeader("Authorization")
+	token, err := s.jwtService.GetPayload(headerToken)
+	if err != nil {
+		return ErrInvalidToken
+	}
+
+	return s.repository.UpdateAccount(ctx, req.Name, req.ImageURL, token.UserID)
 
 }

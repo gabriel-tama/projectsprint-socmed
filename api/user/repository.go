@@ -15,6 +15,7 @@ type Repository interface {
 	FindByCredential(ctx context.Context, user *User) error
 	AddEmail(ctx context.Context, email string, user_id int) error
 	AddPhone(ctx context.Context, phone string, user_id int) error
+	UpdateAccount(ctx context.Context, name string, emailUrl string, user_id int) error
 }
 
 type dbRepository struct {
@@ -109,6 +110,13 @@ func (d *dbRepository) AddPhone(ctx context.Context, phone string, user_id int) 
 	if result.RowsAffected() == 0 {
 		return ErrWrongRoute
 	}
+
+	return err
+
+}
+
+func (d *dbRepository) UpdateAccount(ctx context.Context, name string, imageUrl string, user_id int) error {
+	_, err := d.db.Pool.Exec(ctx, "UPDATE users SET name=$1, imageUrl=$2 WHERE id=$3", name, imageUrl, user_id)
 
 	return err
 

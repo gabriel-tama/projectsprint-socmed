@@ -116,3 +116,8 @@ func (p LinkPhonePayload) Validate() error {
 	}
 	return nil
 }
+
+type UpdateAccountPayload struct {
+	ImageURL string `json:"imageUrl" binding:"required,url"`
+	Name     string `json:"name" binding:"required,min=5,max=50"`
+}

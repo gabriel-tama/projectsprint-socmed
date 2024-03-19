@@ -1,0 +1,5 @@
+ALTER TABLE users
+DROP COLUMN IF EXISTS imageUrl;
+
+ALTER TABLE users
+DROP COLUMN IF EXISTS friendsCount;

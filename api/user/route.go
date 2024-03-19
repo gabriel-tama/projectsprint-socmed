@@ -13,5 +13,6 @@ func NewRouter(r *gin.RouterGroup, controller *Controller, jwtService *jwt.JWTSe
 		router.POST("/login", controller.LoginUser)
 		router.POST("/link/email", controller.LinkEmail)
 		router.POST("/link/phone", controller.LinkPhone)
+		router.PATCH("/", controller.UpdateAccount)
 	}
 }
