@@ -9,6 +9,7 @@ func NewRouter(r *gin.RouterGroup, controller *Controller, jwtService *jwt.JWTSe
 	router := r.Group("/friend")
 
 	{
+		router.GET("/", controller.GetAllFriendsFriend)
 		router.POST("/", controller.AddFriend)
 		router.DELETE("/", controller.DeleteFriend)
 	}

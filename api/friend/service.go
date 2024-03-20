@@ -8,6 +8,7 @@ import (
 type Service interface {
 	AddFriend(ctx *gin.Context, req AddFriendPayload) error
 	DeleteFriend(ctx *gin.Context, req DeleteFriendPayload) error
+	GetAllFriends(ctx *gin.Context, req GetAllFriendsPayload) (FriendListResponse, error, int)
 }
 
 type friendService struct {
@@ -45,4 +46,14 @@ func (s *friendService) DeleteFriend(ctx *gin.Context, req DeleteFriendPayload) 
 	}
 
 	return s.repository.DeleteFriend(ctx, token.UserID, req.UserId)
+}
+
+func (s *friendService) GetAllFriends(ctx *gin.Context, req GetAllFriendsPayload) (FriendListResponse, error, int) {
+	headerToken := ctx.GetHeader("Authorization")
+	token, err := s.jwtService.GetPayload(headerToken)
+	if err != nil {
+		return nil, ErrInvalidToken, 0
+	}
+
+	return s.repository.GetAllFriends(ctx, token.UserID, req)
 }
