@@ -46,7 +46,7 @@ func (d *dbRepository) Create(ctx context.Context, comment *CreateCommentPayload
 	}
 
 	err = d.db.StartTx(ctx, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, "INSERT INTO comments (user_id, post_id, content) VALUES ($1,$2,$3)", postCreatorId, comment.PostID, comment.Content)
+		_, err := tx.Exec(ctx, "INSERT INTO comments (user_id, post_id, content) VALUES ($1,$2,$3)", user_id, comment.PostID, comment.Content)
 		if err != nil {
 			return err
 		}

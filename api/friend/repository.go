@@ -13,7 +13,7 @@ import (
 type Repository interface {
 	AddFriend(ctx context.Context, userId int, requestedId int) error
 	DeleteFriend(ctx context.Context, userId int, requestedId int) error
-	GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (FriendListResponse, error, int)
+	GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (*FriendListResponse, error, int)
 }
 
 type dbRepository struct {
@@ -85,7 +85,7 @@ func (d *dbRepository) DeleteFriend(ctx context.Context, userId int, requestedId
 	return err
 }
 
-func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (FriendListResponse, error, int) {
+func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (*FriendListResponse, error, int) {
 	var friendsList FriendListResponse
 	var total int
 	stmt := `SELECT u.id,u.name,COALESCE(u.imageUrl,''),u.friendsCount,u.created_at, COUNT(*) AS total_count FROM users AS u `
@@ -134,5 +134,5 @@ func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAll
 		return nil, err, 0
 	}
 
-	return friendsList, nil, total
+	return &friendsList, nil, total
 }

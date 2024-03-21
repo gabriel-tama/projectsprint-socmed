@@ -9,6 +9,7 @@ import (
 
 type Service interface {
 	Create(ctx *gin.Context, req CreatePostPayload) (*PostResponse, error)
+	GetAllPosts(ctx *gin.Context, req GetAllPostsPayload) (*GetAllPostsResponse, int, error)
 }
 
 type postService struct {
@@ -47,5 +48,16 @@ func (s *postService) Create(ctx *gin.Context, req CreatePostPayload) (*PostResp
 		PostInHtml: req.PostInHTML,
 		Tags:       req.Tags,
 	}, nil
+
+}
+
+func (s *postService) GetAllPosts(ctx *gin.Context, req GetAllPostsPayload) (*GetAllPostsResponse, int, error) {
+	headerToken := ctx.GetHeader("Authorization")
+	token, err := s.jwtService.GetPayload(headerToken)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return s.repository.GetAllPosts(ctx, req, token.UserID)
 
 }
