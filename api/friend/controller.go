@@ -97,3 +97,29 @@ func (c *Controller) DeleteFriend(ctx *gin.Context) {
 	res.Message = "friend succesfully deleted"
 	ctx.JSON(http.StatusOK, res)
 }
+
+func (c *Controller) GetAllFriendsFriend(ctx *gin.Context) {
+	var req GetAllFriendsPayload
+	var pagination response.Pagination
+	if err := ctx.ShouldBind(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
+		return
+	}
+
+	data, err, total := c.service.GetAllFriends(ctx, req)
+	if errors.Is(err, ErrValidationFailed) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "error serper"})
+		return
+	}
+	pagination.Total = total
+	pagination.Limit = req.Limit
+	pagination.Offset = req.Offset
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "", "data": data, "meta": pagination})
+}

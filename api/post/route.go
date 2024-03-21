@@ -12,5 +12,7 @@ func NewRouter(r *gin.RouterGroup, controller *Controller, jwtService *jwt.JWTSe
 
 	{
 		router.POST("/", controller.CreatePost)
+		router.GET("/", controller.GetAllPosts)
+
 	}
 }

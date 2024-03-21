@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gabriel-tama/projectsprint-socmed/common/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -39,4 +40,25 @@ func (c *Controller) CreatePost(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "post added successfully", "data": data})
 
+}
+
+func (c *Controller) GetAllPosts(ctx *gin.Context) {
+	var req GetAllPostsPayload
+	var pagination response.Pagination
+	if err := ctx.ShouldBind(&req); err != nil {
+		fmt.Println(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	data, total_count, err := c.service.GetAllPosts(ctx, req)
+	if err != nil {
+		fmt.Println(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	pagination.Limit = req.Limit
+	pagination.Offset = req.Offset
+	pagination.Total = total_count
+	ctx.JSON(http.StatusOK, gin.H{"message": "ok", "data": data, "meta": pagination})
 }

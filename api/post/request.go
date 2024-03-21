@@ -25,3 +25,10 @@ func (p CreatePostPayload) Validate() error {
 
 	return nil
 }
+
+type GetAllPostsPayload struct {
+	Limit     int      `form:"limit,default=5" `
+	Offset    int      `form:"offset,default=0"`
+	Search    string   `form:"search"`
+	SearchTag []string `form:"searchTag"`
+}

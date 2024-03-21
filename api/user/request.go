@@ -106,7 +106,7 @@ func (p LinkEmailPayload) Validate() error {
 }
 
 type LinkPhonePayload struct {
-	Phone string `json:"required binding:"required"`
+	Phone string `json:"phone" binding:"required"`
 }
 
 func (p LinkPhonePayload) Validate() error {

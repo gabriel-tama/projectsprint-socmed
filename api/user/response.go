@@ -1,8 +1,14 @@
 package user
 
+import "time"
+
 type UserResponse struct {
-	Name        string `json:"name"`
-	AccessToken string `json:"accessToken"`
-	Email       string `json:"email,omitempty"`
-	Phone       string `json:"phone,omitempty"`
+	ID           string    `json:"userId,omitempty"`
+	Name         string    `json:"name"`
+	ImageUrl     string    `json:"imageUrl,omitempty"`
+	AccessToken  string    `json:"accessToken,omitempty"`
+	Email        string    `json:"email,omitempty"`
+	Phone        string    `json:"phone,omitempty"`
+	FriendsCount string    `json:"friendCount,omitempty"`
+	CreatedAt    time.Time `json:"createdAt,omitempty"`
 }
