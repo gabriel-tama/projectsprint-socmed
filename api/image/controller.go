@@ -48,7 +48,7 @@ func (ic *ImageController) UploadImage(c *gin.Context) {
 	_, err = fileHeader.Read(buffer)
 	if err != nil {
 		res.Message = "file not found"
-		c.JSON(http.StatusInternalServerError, res)
+		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -73,6 +73,7 @@ func (ic *ImageController) UploadImage(c *gin.Context) {
 	if err != nil {
 		res.Message = "failed to upload image"
 		c.JSON(http.StatusInternalServerError, res.Message)
+		return
 	}
 
 	data.Url = ic.s3Service.GetObjectWithUrl(objKey)
