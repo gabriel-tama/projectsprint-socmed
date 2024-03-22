@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gabriel-tama/projectsprint-socmed/common/response"
 	"github.com/gin-gonic/gin"
@@ -22,12 +23,18 @@ func (c *Controller) AddFriend(ctx *gin.Context) {
 	var res response.ResponseBody
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+
 		res.Message = "bad request"
 		ctx.JSON(http.StatusBadRequest, res)
 		return
 	}
-
-	err := c.service.AddFriend(ctx, req)
+	user_id, err := strconv.Atoi(req.UserId)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, res)
+		return
+	}
+	req.UserInt = user_id
+	err = c.service.AddFriend(ctx, req)
 
 	if errors.Is(err, ErrInvalidUser) {
 		res.Message = "invalid user"
@@ -61,7 +68,7 @@ func (c *Controller) AddFriend(ctx *gin.Context) {
 	}
 
 	res.Message = "friend succesfully added"
-	ctx.JSON(http.StatusCreated, res)
+	ctx.JSON(http.StatusOK, res)
 }
 
 func (c *Controller) DeleteFriend(ctx *gin.Context) {
@@ -73,8 +80,13 @@ func (c *Controller) DeleteFriend(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, res)
 		return
 	}
-
-	err := c.service.DeleteFriend(ctx, req)
+	user_id, err := strconv.Atoi(req.UserId)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, res)
+		return
+	}
+	req.UserInt = user_id
+	err = c.service.DeleteFriend(ctx, req)
 	if errors.Is(err, ErrValidationFailed) {
 		res.Message = "validation error"
 		ctx.JSON(http.StatusBadRequest, res)
@@ -101,9 +113,16 @@ func (c *Controller) DeleteFriend(ctx *gin.Context) {
 func (c *Controller) GetAllFriendsFriend(ctx *gin.Context) {
 	var req GetAllFriendsPayload
 	var pagination response.Pagination
-	if err := ctx.ShouldBind(&req); err != nil {
+	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
 		return
+	}
+	paramPairs := ctx.Request.URL.Query()
+	for _, values := range paramPairs {
+		if values[0] == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
+			return
+		}
 	}
 
 	data, err, total := c.service.GetAllFriends(ctx, req)

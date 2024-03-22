@@ -93,17 +93,10 @@ func (s *userService) FindByCredential(ctx context.Context, req LoginUserPayload
 		return nil, err
 	}
 
-	if req.CredentialByEmail() {
-		return &UserResponse{
-			Name:        user.Name,
-			Email:       req.CredentialValue,
-			AccessToken: accessToken,
-		}, nil
-	}
-
 	return &UserResponse{
 		Name:        user.Name,
-		Phone:       req.CredentialValue,
+		Email:       user.Email,
+		Phone:       user.Phone,
 		AccessToken: accessToken,
 	}, nil
 
@@ -148,7 +141,10 @@ func (s *userService) UpdateAccount(ctx *gin.Context, req UpdateAccountPayload) 
 	if err != nil {
 		return ErrInvalidToken
 	}
-
+	err = req.Validate()
+	if err != nil {
+		return ErrValidationFailed
+	}
 	return s.repository.UpdateAccount(ctx, req.Name, req.ImageURL, token.UserID)
 
 }

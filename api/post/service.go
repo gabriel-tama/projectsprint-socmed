@@ -39,15 +39,7 @@ func (s *postService) Create(ctx *gin.Context, req CreatePostPayload) (*PostResp
 	}
 	err = s.repository.Create(ctx, post)
 
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-
-	return &PostResponse{
-		PostInHtml: req.PostInHTML,
-		Tags:       req.Tags,
-	}, nil
+	return nil, err
 
 }
 

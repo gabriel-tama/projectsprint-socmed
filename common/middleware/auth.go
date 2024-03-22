@@ -27,6 +27,7 @@ func AuthorizeJWT(jwtService jwt.JWTService) gin.HandlerFunc {
 		if err != nil {
 			res.Message = "invalid token"
 			c.AbortWithStatusJSON(http.StatusForbidden, res)
+			return
 		}
 	}
 }

@@ -62,16 +62,16 @@ func (d *dbRepository) Create(ctx context.Context, user *User) error {
 }
 
 func (d *dbRepository) FindByCredential(ctx context.Context, user *User) error {
-	stmt := `SELECT id, name, password `
+	stmt := `SELECT id, name, password, `
 	switch user.CredentialType {
 	case "email":
-		stmt = stmt + "email " + "FROM users WHERE email"
+		stmt += "email, COALESCE(phoneNumber,'') " + "FROM users WHERE email"
 	case "phone":
-		stmt = stmt + "phoneNumber " + "FROM users WHERE phoneNumber"
+		stmt += "COALESCE(email,''), phoneNumber " + "FROM users WHERE phoneNumber"
 	}
-	stmt = stmt + "=$1 "
+	stmt += "=$1 "
 	row := d.db.Pool.QueryRow(ctx, stmt, user.Credential)
-	err := row.Scan(&user.ID, &user.Name, &user.Password)
+	err := row.Scan(&user.ID, &user.Name, &user.Password, &user.Email, &user.Phone)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrUserNotFound
 	}

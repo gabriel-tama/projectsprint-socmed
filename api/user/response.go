@@ -9,6 +9,6 @@ type UserResponse struct {
 	AccessToken  string    `json:"accessToken,omitempty"`
 	Email        string    `json:"email,omitempty"`
 	Phone        string    `json:"phone,omitempty"`
-	FriendsCount string    `json:"friendCount,omitempty"`
+	FriendsCount int       `json:"friendCount,omitempty"`
 	CreatedAt    time.Time `json:"createdAt,omitempty"`
 }

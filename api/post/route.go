@@ -8,7 +8,7 @@ import (
 
 func NewRouter(r *gin.RouterGroup, controller *Controller, jwtService *jwt.JWTService) {
 	router := r.Group("/post")
-	r.Use(middleware.AuthorizeJWT(*jwtService))
+	router.Use(middleware.AuthorizeJWT(*jwtService))
 
 	{
 		router.POST("/", controller.CreatePost)
