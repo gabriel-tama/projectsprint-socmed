@@ -39,7 +39,7 @@ func main() {
 	commentRepository := comment.NewRepository(db)
 
 	// Services
-	s3Service := image.NewS3Service(env.S3ID, env.S3Secret, env.S3Bucket, env.S3Url)
+	s3Service := image.NewS3Service(env.S3ID, env.S3Secret, env.S3Bucket, env.S3Url, env.S3Region)
 	jwtService := jwt.NewJWTService(env.JWTSecret, env.JWTExp)
 	userService := user.NewService(userRepository, jwtService)
 	friendService := friend.NewService(friendRepository, jwtService)

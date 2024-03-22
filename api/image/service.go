@@ -26,15 +26,17 @@ type S3ServiceImpl struct {
 	baseUrl    string
 }
 
-func NewS3Service(accessKey string, secretKey string, bucketName string, baseUrl string) S3Service {
-	cfg, err := config.LoadDefaultConfig(context.Background())
+func NewS3Service(accessKey string, secretKey string, bucketName string, baseUrl string, region string) S3Service {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region), config.WithCredentialsProvider(
+		credentials.NewStaticCredentialsProvider(accessKey, secretKey, ""),
+	))
 	if err != nil {
 		panic(err)
 	}
 
-	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.Credentials = aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(accessKey, secretKey, ""))
-	})
+	client := s3.NewFromConfig(cfg) //, func(o *s3.Options) {
+	// o.Credentials = aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(accessKey, secretKey, ""))
+	// })
 
 	return &S3ServiceImpl{
 		S3Client:   client,
