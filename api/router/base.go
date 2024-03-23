@@ -37,7 +37,7 @@ func leakBucket() gin.HandlerFunc {
 }
 
 func SetupRouter(param RouterParam) *gin.Engine {
-	limit = ratelimit.New(100)
+	limit = ratelimit.New(1000)
 	router := gin.Default()
 
 	router.SetTrustedProxies([]string{"::1"}) // This is for reverse proxy

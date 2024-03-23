@@ -61,23 +61,16 @@ func (d *dbRepository) AddFriend(ctx context.Context, userId int, requestedId in
 }
 
 func (d *dbRepository) DeleteFriend(ctx context.Context, userId int, requestedId int) error {
-	// row, err := d.db.Pool.Exec(ctx, "DELETE FROM friends WHERE (user_id=$1 AND friend_id=$2) OR (user_id=$2 AND friend_id=$1)", userId, requestedId)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// if row.RowsAffected() == 0 {
-	// 	return ErrNotFriends
-	// }
-
 	err := d.db.StartTx(ctx, func(tx pgx.Tx) error {
 		row, err := tx.Exec(ctx, "DELETE FROM friends WHERE (user_id=$1 AND friend_id=$2) OR (user_id=$2 AND friend_id=$1)", userId, requestedId)
 		if err != nil {
 			return err
 		}
+
 		if row.RowsAffected() == 0 {
 			return ErrNotFriends
 		}
+
 		_, err = tx.Exec(ctx, "UPDATE users SET friendsCount=friendsCount-1 WHERE id=$1 OR id=$2", requestedId, userId)
 		return err
 	})
@@ -88,9 +81,9 @@ func (d *dbRepository) DeleteFriend(ctx context.Context, userId int, requestedId
 func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (*FriendListResponse, error, int) {
 	var friendsList FriendListResponse
 	var total int
-	stmt := `SELECT u.id,u.name,COALESCE(u.imageUrl,''),u.friendsCount,u.created_at, COUNT(*) AS total_count FROM users AS u `
+	stmt := `SELECT u.id, u.name, COALESCE(u.imageUrl,''), u.friendsCount, u.created_at, COUNT(*) AS total_count FROM users AS u `
 
-	if req.OnlyFriend == true {
+	if req.OnlyFriend {
 		stmt += `LEFT JOIN friends f ON f.user_id=u.id OR f.friend_id=u.id
 				WHERE u.id=$1 `
 	} else {
@@ -104,10 +97,8 @@ func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAll
 
 	if req.SortBy == "createdAt" {
 		stmt += `ORDER BY created_at `
-
 	} else {
 		stmt += `ORDER BY friendCount `
-
 	}
 
 	if req.OrderBy == "asc" {
@@ -121,6 +112,7 @@ func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAll
 		return nil, err, 0
 	}
 	defer rows.Close()
+
 	for rows.Next() {
 		fmt.Println(rows)
 		var friend FriendResponse

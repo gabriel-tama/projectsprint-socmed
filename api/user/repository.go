@@ -32,6 +32,7 @@ func (d *dbRepository) GetSalt() int {
 }
 
 func (d *dbRepository) Create(ctx context.Context, user *User) error {
+	credParam := ""
 
 	stmt := `
         INSERT INTO users (
@@ -40,11 +41,13 @@ func (d *dbRepository) Create(ctx context.Context, user *User) error {
 	switch user.CredentialType {
 	case "email":
 		stmt = stmt + "email) "
+		credParam = user.EmailCredential
 	case "phone":
 		stmt = stmt + "phoneNumber) "
+		credParam = user.PhoneNumberCredential
 	}
 	stmt = stmt + `VALUES ($1, $2, $3) RETURNING id`
-	row := d.db.Pool.QueryRow(ctx, stmt, user.Name, user.Password, user.Credential)
+	row := d.db.Pool.QueryRow(ctx, stmt, user.Name, user.Password, credParam)
 	err := row.Scan(&user.ID)
 	var pgErr *pgconn.PgError
 	if err != nil {
@@ -62,16 +65,21 @@ func (d *dbRepository) Create(ctx context.Context, user *User) error {
 }
 
 func (d *dbRepository) FindByCredential(ctx context.Context, user *User) error {
-	stmt := `SELECT id, name, password `
+	credParam := ""
+	stmt := `SELECT id, name, password, COALESCE(email, '') as email, COALESCE(phoneNumber, '') as phoneNumber `
+
 	switch user.CredentialType {
 	case "email":
-		stmt = stmt + "email " + "FROM users WHERE email"
+		stmt = stmt + "FROM users WHERE email"
+		credParam = user.EmailCredential
 	case "phone":
-		stmt = stmt + "phoneNumber " + "FROM users WHERE phoneNumber"
+		stmt = stmt + "FROM users WHERE phoneNumber"
+		credParam = user.PhoneNumberCredential
 	}
+
 	stmt = stmt + "=$1 "
-	row := d.db.Pool.QueryRow(ctx, stmt, user.Credential)
-	err := row.Scan(&user.ID, &user.Name, &user.Password)
+	row := d.db.Pool.QueryRow(ctx, stmt, credParam)
+	err := row.Scan(&user.ID, &user.Name, &user.Password, &user.EmailCredential, &user.PhoneNumberCredential)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrUserNotFound
 	}

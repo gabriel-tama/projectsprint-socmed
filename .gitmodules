@@ -1,0 +1,5 @@
+
+[submodule "test/k6"]
+	path = test/k6
+	url = https://github.com/nandanugg/SocialMediaTestCases.git
+	ignore = dirty
