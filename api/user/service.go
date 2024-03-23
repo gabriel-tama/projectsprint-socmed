@@ -39,9 +39,14 @@ func (s *userService) Create(ctx context.Context, req CreateUserPayload) (*UserR
 	user := &User{
 		Name:           req.Name,
 		CredentialType: req.CredentialType,
-		Credential:     req.CredentialValue,
 		Password:       hashedPassword,
 	}
+	if req.CredentialByEmail() {
+		user.EmailCredential = req.CredentialValue
+	} else {
+		user.PhoneNumberCredential = req.CredentialValue
+	}
+
 	err = s.repository.Create(ctx, user)
 	if err != nil {
 		return nil, err
@@ -73,8 +78,13 @@ func (s *userService) FindByCredential(ctx context.Context, req LoginUserPayload
 	}
 	user := &User{
 		CredentialType: req.CredentialType,
-		Credential:     req.CredentialValue,
 	}
+	if req.CredentialByEmail() {
+		user.EmailCredential = req.CredentialValue
+	} else {
+		user.PhoneNumberCredential = req.CredentialValue
+	}
+
 	err = s.repository.FindByCredential(ctx, user)
 	if err != nil {
 		return nil, err
@@ -95,8 +105,8 @@ func (s *userService) FindByCredential(ctx context.Context, req LoginUserPayload
 
 	return &UserResponse{
 		Name:        user.Name,
-		Email:       user.Email,
-		Phone:       user.Phone,
+		Phone:       user.PhoneNumberCredential,
+		Email:       user.EmailCredential,
 		AccessToken: accessToken,
 	}, nil
 

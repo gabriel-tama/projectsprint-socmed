@@ -7,8 +7,8 @@ type UserResponse struct {
 	Name         string    `json:"name"`
 	ImageUrl     string    `json:"imageUrl,omitempty"`
 	AccessToken  string    `json:"accessToken,omitempty"`
-	Email        string    `json:"email,omitempty"`
-	Phone        string    `json:"phone,omitempty"`
-	FriendsCount int       `json:"friendCount,omitempty"`
+	Email        string    `json:"email"`
+	Phone        string    `json:"phone"`
+	FriendsCount string    `json:"friendCount,omitempty"`
 	CreatedAt    time.Time `json:"createdAt,omitempty"`
 }

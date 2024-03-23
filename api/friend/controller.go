@@ -28,13 +28,9 @@ func (c *Controller) AddFriend(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, res)
 		return
 	}
-	user_id, err := strconv.Atoi(req.UserId)
-	if err != nil {
-		ctx.JSON(http.StatusNotFound, res)
-		return
-	}
-	req.UserInt = user_id
-	err = c.service.AddFriend(ctx, req)
+
+	err := c.service.AddFriend(ctx, req)
+	fmt.Println(err)
 
 	if errors.Is(err, ErrInvalidUser) {
 		res.Message = "invalid user"
@@ -125,7 +121,7 @@ func (c *Controller) GetAllFriendsFriend(ctx *gin.Context) {
 		}
 	}
 
-	data, err, total := c.service.GetAllFriends(ctx, req)
+	data, total, err := c.service.GetAllFriends(ctx, req)
 	if errors.Is(err, ErrValidationFailed) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -140,5 +136,5 @@ func (c *Controller) GetAllFriendsFriend(ctx *gin.Context) {
 	pagination.Limit = req.Limit
 	pagination.Offset = req.Offset
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "", "data": data, "meta": pagination})
+	ctx.JSON(http.StatusOK, gin.H{"message": "successfully get list of friends", "data": data, "meta": pagination})
 }

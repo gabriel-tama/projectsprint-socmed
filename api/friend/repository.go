@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
+	"strings"
+
 
 	"github.com/gabriel-tama/projectsprint-socmed/common/db"
 	"github.com/jackc/pgx/v5"
@@ -14,7 +15,7 @@ import (
 type Repository interface {
 	AddFriend(ctx context.Context, userId int, requestedId int) error
 	DeleteFriend(ctx context.Context, userId int, requestedId int) error
-	GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (*FriendListResponse, error, int)
+	GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (*FriendListResponse, int, error)
 }
 
 type dbRepository struct {
@@ -29,11 +30,12 @@ func (d *dbRepository) AddFriend(ctx context.Context, userId int, requestedId in
 	// var exists bool
 	var pgErr *pgconn.PgError
 
-	// row := d.db.Pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM friends WHERE user_id=$1 AND friend_id=$2)", requestedId, userId)
-	// err := row.Scan(&exists)
-	// if err != nil {
-	// 	return err
-	// }
+	row := d.db.Pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM friends WHERE user_id IN ($1, $2) AND friend_id IN ($1, $2))", requestedId, userId)
+	err := row.Scan(&exists)
+	if err != nil {
+		return err
+	}
+
 
 	// if exists {
 	// 	return ErrAlreadyFriends
@@ -54,34 +56,25 @@ func (d *dbRepository) AddFriend(ctx context.Context, userId int, requestedId in
 			}
 			return err
 		}
-		_, err = tx.Exec(ctx, "INSERT INTO friends (user_id, friend_id) VALUES ($1, $2)", requestedId, userId)
-		if err != nil {
-			return err
-		}
-		_, err = tx.Exec(ctx, "UPDATE users SET friendsCount=friendsCount+1 WHERE id=$1 OR id=$2", userId, requestedId)
+		_, err = tx.Exec(ctx, "UPDATE users SET friendsCount=friendsCount+1 WHERE id IN ($1, $2)", userId, requestedId)
+
+
 		return err
 	})
 	return err
 }
 
 func (d *dbRepository) DeleteFriend(ctx context.Context, userId int, requestedId int) error {
-	// row, err := d.db.Pool.Exec(ctx, "DELETE FROM friends WHERE (user_id=$1 AND friend_id=$2) OR (user_id=$2 AND friend_id=$1)", userId, requestedId)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// if row.RowsAffected() == 0 {
-	// 	return ErrNotFriends
-	// }
-
 	err := d.db.StartTx(ctx, func(tx pgx.Tx) error {
 		row, err := tx.Exec(ctx, "DELETE FROM friends WHERE (user_id=$1 AND friend_id=$2) OR (user_id=$2 AND friend_id=$1)", userId, requestedId)
 		if err != nil {
 			return err
 		}
+
 		if row.RowsAffected() == 0 {
 			return ErrNotFriends
 		}
+
 		_, err = tx.Exec(ctx, "UPDATE users SET friendsCount=friendsCount-1 WHERE id=$1 OR id=$2", requestedId, userId)
 		return err
 	})
@@ -89,69 +82,83 @@ func (d *dbRepository) DeleteFriend(ctx context.Context, userId int, requestedId
 	return err
 }
 
-func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (*FriendListResponse, error, int) {
-	var friendsList FriendListResponse
-	total := 0
-	// stmt := `SELECT u.id,u.name,COALESCE(u.imageUrl,''),u.friendsCount,u.created_at,COUNT(*) AS total_count FROM users AS u `
+func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (*FriendListResponse, int, error) {
+	var friendsList FriendListResponse = []FriendResponse{}
+	var total int
 
-	// if req.OnlyFriend == true {
-	// 	stmt += `LEFT JOIN friends f ON f.friend_id=u.id
-	// 			WHERE u.id!=$1 `
-	// } else {
-	// 	stmt += "WHERE u.id!=$1 "
-	// }
+	var (
+		selectStatement     string
+		whereStatement      string
+		groupByStatement    string
+		query               string
+		joinStatement       string
+		orderStatement      string
+		paginationStatement string
+		args                []interface{}
+		columnCtr           int = 1
+	)
 
-	// if req.Search != "" {
-	// 	stmt += `AND u.name LIKE %` + req.Search + `% `
-	// }
-	// stmt += `GROUP BY u.id `
-	stmt := `SELECT u.id, u.name, COALESCE(u.imageUrl,''),u.friendsCount,u.created_at,COUNT(*) OVER() FROM users u `
-	if req.OnlyFriend == true {
-		stmt += `WHERE u.id IN (SELECT friend_id FROM friends WHERE user_id=` + strconv.Itoa(userId) + `) `
-		if req.Search != "" {
-			stmt += `AND u.name LIKE '%` + req.Search + `%' `
-		}
+	if req.OnlyFriend {
+		joinStatement = `JOIN friends f ON f.user_id=u.id OR f.friend_id=u.id `
+		whereStatement = fmt.Sprintf(`WHERE u.id !=%d `, userId)
 	} else {
-		stmt += `WHERE u.id!=` + strconv.Itoa(userId)
-		if req.Search != "" {
-			stmt += `AND u.name LIKE '%` + req.Search + `%' `
-		}
+		joinStatement = ""
+		whereStatement = fmt.Sprintf(`WHERE u.id !=%d `, userId)
 	}
-	stmt += `GROUP BY u.id `
+
+	if req.Search != "" {
+		whereStatement = fmt.Sprintf(`%s AND u.name LIKE $%d `, whereStatement, columnCtr)
+		args = append(args, "%"+req.Search+"%")
+		columnCtr++
+	}
+
+	groupByStatement = `` // GROUP BY u.id
+
+
 	if req.SortBy == "createdAt" {
-		stmt += `ORDER BY created_at `
-
+		orderStatement = `ORDER BY created_at `
 	} else {
-		stmt += `ORDER BY friendsCount `
-
+		orderStatement = `ORDER BY friendsCount `
 	}
 
 	if req.OrderBy == "asc" {
-		stmt += `ASC `
+		orderStatement += `ASC `
 	} else {
-		stmt += `DESC `
+		orderStatement += `DESC `
 	}
-	stmt += `LIMIT $1 OFFSET $2 `
-	fmt.Println(stmt)
-	rows, err := d.db.Pool.Query(ctx, stmt, req.Limit, req.Offset)
+
+	selectStatement = "SELECT u.id, u.name, COALESCE(u.imageUrl,'') AS imageUrl, u.friendsCount, u.created_at, COUNT(*) OVER() AS total_count FROM users AS u "
+	paginationStatement = fmt.Sprintf("%s LIMIT $%d", paginationStatement, columnCtr)
+	args = append(args, req.Limit)
+	columnCtr++
+
+	paginationStatement = fmt.Sprintf("%s OFFSET $%d", paginationStatement, columnCtr)
+	args = append(args, req.Offset)
+
+	query = fmt.Sprintf("%s %s %s %s %s %s;", selectStatement, joinStatement, whereStatement, orderStatement, groupByStatement, paginationStatement)
+
+	// sanitize query
+	query = strings.Replace(query, "\t", "", -1)
+	query = strings.Replace(query, "\n", "", -1)
+
+	rows, err := d.db.Pool.Query(ctx, query, args...)
+
 	if err != nil {
-		return nil, err, 0
+		return nil, 0, err
 	}
 	defer rows.Close()
+
 	for rows.Next() {
-		fmt.Println(rows)
 		var friend FriendResponse
 		var tot int
 		err := rows.Scan(&friend.UserId, &friend.Name, &friend.ImageUrl, &friend.FriendCount, &friend.CreatedAt, &tot)
 		if err != nil {
-			return nil, err, 0
+			return nil, 0, err
 		}
 		friendsList = append(friendsList, friend)
 		total += tot
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err, 0
-	}
 
-	return &friendsList, nil, total
+	return &friendsList, total, nil
+
 }

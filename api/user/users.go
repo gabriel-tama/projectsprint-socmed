@@ -1,13 +1,13 @@
 package user
 
 type User struct {
-	ID             uint64
-	Name           string
-	CredentialType string
-	Credential     string
-	Password       string
-	Email          string
-	Phone          string
+	ID                    uint64
+	Name                  string
+	CredentialType        string
+	EmailCredential       string
+	PhoneNumberCredential string
+	Password              string
+
 }
 
 type CredentialType string
