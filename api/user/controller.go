@@ -66,7 +66,7 @@ func (c *Controller) LoginUser(ctx *gin.Context) {
 	}
 
 	if errors.Is(err, ErrUserNotFound) {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "user not found"})
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "user not found"})
 		return
 	}
 	if errors.Is(err, ErrWrongPassword) {
@@ -86,6 +86,12 @@ func (c *Controller) LoginUser(ctx *gin.Context) {
 
 func (c *Controller) LinkEmail(ctx *gin.Context) {
 	var req LinkEmailPayload
+
+	headerToken := ctx.GetHeader("Authorization")
+	if headerToken == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
@@ -126,7 +132,11 @@ func (c *Controller) LinkEmail(ctx *gin.Context) {
 
 func (c *Controller) LinkPhone(ctx *gin.Context) {
 	var req LinkPhonePayload
-
+	headerToken := ctx.GetHeader("Authorization")
+	if headerToken == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
 		return
@@ -140,7 +150,7 @@ func (c *Controller) LinkPhone(ctx *gin.Context) {
 	}
 
 	if errors.Is(err, ErrPhoneAlreadyExists) {
-		ctx.JSON(http.StatusConflict, gin.H{"message": "email already exist"})
+		ctx.JSON(http.StatusConflict, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -161,6 +171,11 @@ func (c *Controller) LinkPhone(ctx *gin.Context) {
 
 func (c *Controller) UpdateAccount(ctx *gin.Context) {
 	var req UpdateAccountPayload
+	headerToken := ctx.GetHeader("Authorization")
+	if headerToken == "" {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		return
+	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
@@ -168,6 +183,11 @@ func (c *Controller) UpdateAccount(ctx *gin.Context) {
 	}
 
 	err := c.service.UpdateAccount(ctx, req)
+
+	if errors.Is(err, ErrValidationFailed) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
 	if errors.Is(err, ErrInvalidToken) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
 		return

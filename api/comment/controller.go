@@ -18,7 +18,7 @@ func NewController(service Service) *Controller {
 func (c *Controller) CreateComment(ctx *gin.Context) {
 	var req CreateCommentPayload
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -29,12 +29,13 @@ func (c *Controller) CreateComment(ctx *gin.Context) {
 	}
 
 	if errors.Is(err, ErrInvalidToken) {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"message": "invalid tkoeen"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
 		return
 	}
 
 	if errors.Is(err, ErrInvalidPost) {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "post not found"})
+		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		return
 	}
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err})
