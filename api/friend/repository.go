@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/gabriel-tama/projectsprint-socmed/common/db"
 	"github.com/jackc/pgx/v5"
@@ -13,7 +14,7 @@ import (
 type Repository interface {
 	AddFriend(ctx context.Context, userId int, requestedId int) error
 	DeleteFriend(ctx context.Context, userId int, requestedId int) error
-	GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (*FriendListResponse, error, int)
+	GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (*FriendListResponse, int, error)
 }
 
 type dbRepository struct {
@@ -28,7 +29,7 @@ func (d *dbRepository) AddFriend(ctx context.Context, userId int, requestedId in
 	var exists bool
 	var pgErr *pgconn.PgError
 
-	row := d.db.Pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM friends WHERE user_id=$1 AND friend_id=$2)", requestedId, userId)
+	row := d.db.Pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM friends WHERE user_id IN ($1, $2) AND friend_id IN ($1, $2))", requestedId, userId)
 	err := row.Scan(&exists)
 	if err != nil {
 		return err
@@ -53,7 +54,7 @@ func (d *dbRepository) AddFriend(ctx context.Context, userId int, requestedId in
 			}
 			return err
 		}
-		_, err = tx.Exec(ctx, "UPDATE users SET friendsCount=friendsCount+1 WHERE id=$1 OR id=$2", userId, requestedId)
+		_, err = tx.Exec(ctx, "UPDATE users SET friendsCount=friendsCount+1 WHERE id IN ($1, $2)", userId, requestedId)
 
 		return err
 	})
@@ -78,53 +79,79 @@ func (d *dbRepository) DeleteFriend(ctx context.Context, userId int, requestedId
 	return err
 }
 
-func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (*FriendListResponse, error, int) {
-	var friendsList FriendListResponse
+func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAllFriendsPayload) (*FriendListResponse, int, error) {
+	var friendsList FriendListResponse = []FriendResponse{}
 	var total int
-	stmt := `SELECT u.id, u.name, COALESCE(u.imageUrl,''), u.friendsCount, u.created_at, COUNT(*) AS total_count FROM users AS u `
+
+	var (
+		selectStatement     string
+		whereStatement      string
+		groupByStatement    string
+		query               string
+		joinStatement       string
+		orderStatement      string
+		paginationStatement string
+		args                []interface{}
+		columnCtr           int = 1
+	)
 
 	if req.OnlyFriend {
-		stmt += `LEFT JOIN friends f ON f.user_id=u.id OR f.friend_id=u.id
-				WHERE u.id=$1 `
+		joinStatement = `JOIN friends f ON f.user_id=u.id OR f.friend_id=u.id `
+		whereStatement = fmt.Sprintf(`WHERE u.id !=%d `, userId)
 	} else {
-		stmt += "WHERE u.id!=$1 "
+		joinStatement = ""
+		whereStatement = fmt.Sprintf(`WHERE u.id !=%d `, userId)
 	}
 
 	if req.Search != "" {
-		stmt += `AND u.name LIKE %` + req.Search + `% `
+		whereStatement = fmt.Sprintf(`%s AND u.name LIKE $%d `, whereStatement, columnCtr)
+		args = append(args, "%"+req.Search+"%")
+		columnCtr++
 	}
-	stmt += `GROUP BY u.id `
+
+	groupByStatement = `` // GROUP BY u.id
 
 	if req.SortBy == "createdAt" {
-		stmt += `ORDER BY created_at `
+		orderStatement = `ORDER BY created_at `
 	} else {
-		stmt += `ORDER BY friendCount `
+		orderStatement = `ORDER BY friendsCount `
 	}
 
 	if req.OrderBy == "asc" {
-		stmt += `ASC `
+		orderStatement += `ASC `
 	} else {
-		stmt += `DESC `
+		orderStatement += `DESC `
 	}
-	stmt += `LIMIT $2 OFFSET $3 `
-	rows, err := d.db.Pool.Query(ctx, stmt, userId, req.Limit, req.Offset)
+
+	selectStatement = "SELECT u.id, u.name, COALESCE(u.imageUrl,'') AS imageUrl, u.friendsCount, u.created_at, COUNT(*) OVER() AS total_count FROM users AS u "
+	paginationStatement = fmt.Sprintf("%s LIMIT $%d", paginationStatement, columnCtr)
+	args = append(args, req.Limit)
+	columnCtr++
+
+	paginationStatement = fmt.Sprintf("%s OFFSET $%d", paginationStatement, columnCtr)
+	args = append(args, req.Offset)
+
+	query = fmt.Sprintf("%s %s %s %s %s %s;", selectStatement, joinStatement, whereStatement, orderStatement, groupByStatement, paginationStatement)
+
+	// sanitize query
+	query = strings.Replace(query, "\t", "", -1)
+	query = strings.Replace(query, "\n", "", -1)
+
+	rows, err := d.db.Pool.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err, 0
+		return nil, 0, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		fmt.Println(rows)
 		var friend FriendResponse
 		err := rows.Scan(&friend.UserId, &friend.Name, &friend.ImageUrl, &friend.FriendCount, &friend.CreatedAt, &total)
 		if err != nil {
-			return nil, err, 0
+			return nil, 0, err
 		}
 		friendsList = append(friendsList, friend)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err, 0
-	}
 
-	return &friendsList, nil, total
+	return &friendsList, total, nil
+
 }

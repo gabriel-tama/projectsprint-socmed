@@ -1,6 +1,8 @@
 package friend
 
 import (
+	"strconv"
+
 	"github.com/gabriel-tama/projectsprint-socmed/common/jwt"
 	"github.com/gin-gonic/gin"
 )
@@ -8,7 +10,7 @@ import (
 type Service interface {
 	AddFriend(ctx *gin.Context, req AddFriendPayload) error
 	DeleteFriend(ctx *gin.Context, req DeleteFriendPayload) error
-	GetAllFriends(ctx *gin.Context, req GetAllFriendsPayload) (*FriendListResponse, error, int)
+	GetAllFriends(ctx *gin.Context, req GetAllFriendsPayload) (*FriendListResponse, int, error)
 }
 
 type friendService struct {
@@ -27,11 +29,16 @@ func (s *friendService) AddFriend(ctx *gin.Context, req AddFriendPayload) error 
 		return ErrInvalidToken
 	}
 
-	if req.UserId == token.UserID {
+	userId, err := strconv.Atoi(req.UserId)
+	if err != nil {
+		return ErrValidationFailed
+	}
+
+	if userId == token.UserID {
 		return ErrAlreadyFriends
 	}
 
-	return s.repository.AddFriend(ctx, token.UserID, req.UserId)
+	return s.repository.AddFriend(ctx, token.UserID, userId)
 }
 
 func (s *friendService) DeleteFriend(ctx *gin.Context, req DeleteFriendPayload) error {
@@ -48,11 +55,11 @@ func (s *friendService) DeleteFriend(ctx *gin.Context, req DeleteFriendPayload) 
 	return s.repository.DeleteFriend(ctx, token.UserID, req.UserId)
 }
 
-func (s *friendService) GetAllFriends(ctx *gin.Context, req GetAllFriendsPayload) (*FriendListResponse, error, int) {
+func (s *friendService) GetAllFriends(ctx *gin.Context, req GetAllFriendsPayload) (*FriendListResponse, int, error) {
 	headerToken := ctx.GetHeader("Authorization")
 	token, err := s.jwtService.GetPayload(headerToken)
 	if err != nil {
-		return nil, ErrInvalidToken, 0
+		return nil, 0, ErrInvalidToken
 	}
 
 	return s.repository.GetAllFriends(ctx, token.UserID, req)
