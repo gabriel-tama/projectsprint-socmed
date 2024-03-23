@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+
 	"github.com/gabriel-tama/projectsprint-socmed/common/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -26,7 +27,7 @@ func NewRepository(db *db.DB) Repository {
 }
 
 func (d *dbRepository) AddFriend(ctx context.Context, userId int, requestedId int) error {
-	var exists bool
+	// var exists bool
 	var pgErr *pgconn.PgError
 
 	row := d.db.Pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM friends WHERE user_id IN ($1, $2) AND friend_id IN ($1, $2))", requestedId, userId)
@@ -35,11 +36,12 @@ func (d *dbRepository) AddFriend(ctx context.Context, userId int, requestedId in
 		return err
 	}
 
-	if exists {
-		return ErrAlreadyFriends
-	}
 
-	err = d.db.StartTx(ctx, func(tx pgx.Tx) error {
+	// if exists {
+	// 	return ErrAlreadyFriends
+	// }
+
+	err := d.db.StartTx(ctx, func(tx pgx.Tx) error {
 		_, err := tx.Exec(ctx, "INSERT INTO friends (user_id, friend_id) VALUES ($1, $2)", userId, requestedId)
 		if err != nil {
 			if errors.As(err, &pgErr) {
@@ -55,6 +57,7 @@ func (d *dbRepository) AddFriend(ctx context.Context, userId int, requestedId in
 			return err
 		}
 		_, err = tx.Exec(ctx, "UPDATE users SET friendsCount=friendsCount+1 WHERE id IN ($1, $2)", userId, requestedId)
+
 
 		return err
 	})
@@ -111,6 +114,7 @@ func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAll
 
 	groupByStatement = `` // GROUP BY u.id
 
+
 	if req.SortBy == "createdAt" {
 		orderStatement = `ORDER BY created_at `
 	} else {
@@ -138,6 +142,7 @@ func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAll
 	query = strings.Replace(query, "\n", "", -1)
 
 	rows, err := d.db.Pool.Query(ctx, query, args...)
+
 	if err != nil {
 		return nil, 0, err
 	}
@@ -145,11 +150,13 @@ func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAll
 
 	for rows.Next() {
 		var friend FriendResponse
-		err := rows.Scan(&friend.UserId, &friend.Name, &friend.ImageUrl, &friend.FriendCount, &friend.CreatedAt, &total)
+		var tot int
+		err := rows.Scan(&friend.UserId, &friend.Name, &friend.ImageUrl, &friend.FriendCount, &friend.CreatedAt, &tot)
 		if err != nil {
 			return nil, 0, err
 		}
 		friendsList = append(friendsList, friend)
+		total += tot
 	}
 
 	return &friendsList, total, nil

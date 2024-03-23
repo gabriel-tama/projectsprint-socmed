@@ -7,6 +7,7 @@ type User struct {
 	EmailCredential       string
 	PhoneNumberCredential string
 	Password              string
+
 }
 
 type CredentialType string

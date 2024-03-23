@@ -2,7 +2,10 @@ package user
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"regexp"
+	"strings"
 )
 
 type CreateUserPayload struct {
@@ -118,6 +121,24 @@ func (p LinkPhonePayload) Validate() error {
 }
 
 type UpdateAccountPayload struct {
-	ImageURL string `json:"imageUrl" binding:"required,url"`
+	ImageURL string `json:"imageUrl" binding:"required"`
 	Name     string `json:"name" binding:"required,min=5,max=50"`
+}
+
+func (p UpdateAccountPayload) Validate() error {
+	url, err := url.ParseRequestURI(p.ImageURL)
+	if err != nil {
+		return err
+	}
+
+	address := net.ParseIP(url.Host)
+
+	if address == nil {
+
+		if !strings.Contains(url.Host, ".") {
+			return ErrValidationFailed
+		}
+	}
+
+	return nil
 }

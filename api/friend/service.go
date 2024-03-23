@@ -25,6 +25,7 @@ func NewService(repository Repository, jwtService jwt.JWTService) Service {
 func (s *friendService) AddFriend(ctx *gin.Context, req AddFriendPayload) error {
 	headerToken := ctx.GetHeader("Authorization")
 	token, err := s.jwtService.GetPayload(headerToken)
+
 	if err != nil {
 		return ErrInvalidToken
 	}
@@ -39,6 +40,7 @@ func (s *friendService) AddFriend(ctx *gin.Context, req AddFriendPayload) error 
 	}
 
 	return s.repository.AddFriend(ctx, token.UserID, userId)
+
 }
 
 func (s *friendService) DeleteFriend(ctx *gin.Context, req DeleteFriendPayload) error {
@@ -48,11 +50,11 @@ func (s *friendService) DeleteFriend(ctx *gin.Context, req DeleteFriendPayload) 
 		return err
 	}
 
-	if req.UserId == token.UserID {
+	if req.UserInt == token.UserID {
 		return ErrInvalidUser
 	}
 
-	return s.repository.DeleteFriend(ctx, token.UserID, req.UserId)
+	return s.repository.DeleteFriend(ctx, token.UserID, req.UserInt)
 }
 
 func (s *friendService) GetAllFriends(ctx *gin.Context, req GetAllFriendsPayload) (*FriendListResponse, int, error) {

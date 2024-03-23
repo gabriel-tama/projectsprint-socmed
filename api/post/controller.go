@@ -21,11 +21,11 @@ func (c *Controller) CreatePost(ctx *gin.Context) {
 	var req CreatePostPayload
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	data, err := c.service.Create(ctx, req)
+	_, err := c.service.Create(ctx, req)
 
 	if errors.Is(err, ErrValidationFailed) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "validation error"})
@@ -38,7 +38,7 @@ func (c *Controller) CreatePost(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "post added successfully", "data": data})
+	ctx.JSON(http.StatusOK, gin.H{"message": "post added successfully"})
 
 }
 
@@ -49,6 +49,13 @@ func (c *Controller) GetAllPosts(ctx *gin.Context) {
 		fmt.Println(err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
+	}
+	paramPairs := ctx.Request.URL.Query()
+	for _, values := range paramPairs {
+		if values[0] == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
+			return
+		}
 	}
 
 	data, total_count, err := c.service.GetAllPosts(ctx, req)

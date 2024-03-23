@@ -151,7 +151,10 @@ func (s *userService) UpdateAccount(ctx *gin.Context, req UpdateAccountPayload) 
 	if err != nil {
 		return ErrInvalidToken
 	}
-
+	err = req.Validate()
+	if err != nil {
+		return ErrValidationFailed
+	}
 	return s.repository.UpdateAccount(ctx, req.Name, req.ImageURL, token.UserID)
 
 }
