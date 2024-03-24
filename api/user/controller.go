@@ -138,7 +138,7 @@ func (c *Controller) LinkPhone(ctx *gin.Context) {
 		return
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
