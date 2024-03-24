@@ -161,28 +161,35 @@ func (d *dbRepository) GetAllPosts(ctx context.Context, req GetAllPostsPayload, 
                 GROUP BY p.id, p.user_id, u.id
             )
             SELECT *,
-                (SELECT COUNT(*) FROM UserPosts) AS total_post_count
-            FROM UserPosts
+                (SELECT COUNT(*) FROM UserPosts
+				
+				
              `
+	filter := ``
 	if req.Search != "" {
-		stmt += "WHERE post_in_html LIKE '%" + req.Search + "%' "
+		filter += "WHERE post_in_html LIKE '%" + req.Search + "%' "
 	}
 	if len(req.SearchTag) != 0 {
 		if req.Search != "" {
-			stmt += "AND ( "
+			filter += "AND ( "
 		} else {
-			stmt += "WHERE "
+			filter += "WHERE "
 		}
 		for i := 0; i < len(req.SearchTag); i++ {
-			stmt += req.SearchTag[i] + ` = ANY(tags) `
+			filter += `'` + req.SearchTag[i] + `' = ANY(tags) `
 			if len(req.SearchTag)-1 != i {
-				stmt += `OR `
+				filter += `OR `
 			}
 		}
 		if req.Search != "" {
-			stmt += ") "
+			filter += ") "
 		}
 	}
+	stmt += filter
+
+	stmt += `) AS total_post_count
+            FROM UserPosts `
+	stmt += filter
 
 	stmt += "ORDER BY post_created_at DESC LIMIT $2 OFFSET $3 "
 	fmt.Println(stmt)
@@ -190,6 +197,7 @@ func (d *dbRepository) GetAllPosts(ctx context.Context, req GetAllPostsPayload, 
 	if err != nil {
 		return nil, 0, err
 	}
+	fmt.Println(userId)
 	defer rows.Close()
 	var total int
 	var postIds []string

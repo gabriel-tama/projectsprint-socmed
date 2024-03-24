@@ -3,6 +3,7 @@ package comment
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,6 +24,13 @@ func (c *Controller) CreateComment(ctx *gin.Context) {
 	}
 
 	err := c.service.Create(ctx, &req)
+
+	_, err = strconv.Atoi(req.PostID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "bad req"})
+		return
+	}
+
 	if errors.Is(err, ErrNotFriends) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

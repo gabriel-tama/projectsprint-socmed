@@ -29,18 +29,19 @@ func GetPostgresURL() string {
 	dbUser := env.DBUser
 	dbPass := env.DBPassword
 	dbName := env.DBName
+	dbSSL := "sslmode=disabled"
 
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPass,
-		dbHost, dbPort, dbName)
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?%s", dbUser, dbPass,
+		dbHost, dbPort, dbName, dbSSL)
 }
 
 func Config(DATABASE_URL string) *pgxpool.Config {
-	const defaultMaxConns = int32(4)
+	const defaultMaxConns = int32(100)
 	const defaultMinConns = int32(0)
 	const defaultMaxConnLifetime = time.Hour
 	const defaultMaxConnIdleTime = time.Minute * 30
 	const defaultHealthCheckPeriod = time.Minute
-	const defaultConnectTimeout = time.Second * 5
+	const defaultConnectTimeout = time.Second * 100
 
 	// Your own Database URL
 	dbConfig, err := pgxpool.ParseConfig(DATABASE_URL)

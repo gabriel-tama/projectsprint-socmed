@@ -32,7 +32,7 @@ func (s *friendService) AddFriend(ctx *gin.Context, req AddFriendPayload) error 
 
 	userId, err := strconv.Atoi(req.UserId)
 	if err != nil {
-		return ErrValidationFailed
+		return ErrInvalidUser
 	}
 
 	if userId == token.UserID {

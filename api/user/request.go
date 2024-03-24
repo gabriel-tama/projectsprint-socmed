@@ -113,8 +113,9 @@ type LinkPhonePayload struct {
 }
 
 func (p LinkPhonePayload) Validate() error {
-	var phoneRegex = regexp.MustCompile(`^\+\d{7,13}$`)
+	var phoneRegex = regexp.MustCompile(`^\+\d{6,12}$`)
 	if !phoneRegex.MatchString(p.Phone) {
+		fmt.Println("invalid phone")
 		return fmt.Errorf("invalid phone format")
 	}
 	return nil
