@@ -7,6 +7,7 @@ import (
 )
 
 type CommentResponse struct {
+	PostId    int
 	Content   string            `json:"comment"`
 	Creator   user.UserResponse `json:"creator,omitempty"`
 	CreatedAt time.Time         `json:"createdAt,omitempty"`

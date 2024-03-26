@@ -14,6 +14,7 @@ type Config struct {
 	DBUser     string
 	DBName     string
 	DBPassword string
+	DBParams   string
 
 	S3Bucket string
 	S3Secret string
@@ -54,6 +55,7 @@ func Get() (*Config, error) {
 		DBUser:     os.Getenv("DB_USERNAME"),
 		DBName:     os.Getenv("DB_NAME"),
 		DBPassword: os.Getenv("DB_PASSWORD"),
+		DBParams:   os.Getenv("DB_PARAMS"),
 
 		S3Bucket: os.Getenv("S3_BUCKET_NAME"),
 		S3Secret: os.Getenv("S3_SECRET_KEY"),

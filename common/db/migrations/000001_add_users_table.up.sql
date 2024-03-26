@@ -9,6 +9,6 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX idx_name ON users (name);
--- CREATE INDEX idx_phonenumber ON users (phoneNumber);
--- CREATE INDEX idx_email ON users (email);
+CREATE INDEX idx_phonenumber ON users (phoneNumber);
+CREATE INDEX idx_email ON users (email);
 
