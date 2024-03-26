@@ -68,7 +68,7 @@ func main() {
 		})
 	})
 
-	if err := router.Run(fmt.Sprintf("%s:%s", env.Host, env.Port)); err != nil {
+	if err := router.Run(fmt.Sprintf("%s:%s", "0.0.0.0", 8080)); err != nil {
 		log.Fatal("Server error:", err)
 	}
 }
