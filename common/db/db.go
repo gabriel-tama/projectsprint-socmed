@@ -29,10 +29,9 @@ func GetPostgresURL() string {
 	dbUser := env.DBUser
 	dbPass := env.DBPassword
 	dbName := env.DBName
-	dbSSL := "sslmode=disabled"
 
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?%s", dbUser, dbPass,
-		dbHost, dbPort, dbName, dbSSL)
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPass,
+		dbHost, dbPort, dbName)
 }
 
 func Config(DATABASE_URL string) *pgxpool.Config {

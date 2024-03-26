@@ -31,7 +31,7 @@ func Get() (*Config, error) {
 	var Conf *Config
 	// err := godotenv.Load()
 	// if err != nil {
-	//     fmt.Println(err)
+	// 	fmt.Println(err)
 	// 	log.Fatal("Error loading .env file")
 	// }
 
