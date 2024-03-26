@@ -1,12 +1,8 @@
 package config
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"strconv"
-
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -33,22 +29,20 @@ type Config struct {
 func Get() (*Config, error) {
 
 	var Conf *Config
-	err := godotenv.Load()
-	if err != nil {
-        fmt.Println(err)
-		log.Fatal("Error loading .env file")
-	}
+	// err := godotenv.Load()
+	// if err != nil {
+	//     fmt.Println(err)
+	// 	log.Fatal("Error loading .env file")
+	// }
 
 	JWTExp, err := strconv.Atoi(os.Getenv("JWT_EXPIRATION"))
 	if err != nil {
-		log.Fatal("Error parsing JWT_EXPIRATION")
 		JWTExp = 60
 	}
 
 	salt, err := strconv.Atoi(os.Getenv("BCRYPT_SALT"))
 	if err != nil {
-		log.Fatal("Error parsing BCRYPT_SALT")
-		salt = 10
+		salt = 8
 	}
 
 	Conf = &Config{
