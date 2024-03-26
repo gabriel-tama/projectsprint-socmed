@@ -140,28 +140,38 @@ func (d *dbRepository) Create(ctx context.Context, post *Post) error {
 func (d *dbRepository) GetAllPosts(ctx context.Context, req GetAllPostsPayload, userId int) (*GetAllPostsResponse, int, error) {
 	var res GetAllPostsResponse
 	stmt := `WITH UserPosts AS (
-                SELECT p.id AS post_id, p.user_id, p.post_in_html,p.created_at AS post_created_at, u.name, COALESCE(u.imageUrl,''), u.created_at, ARRAY_AGG(pt.tag) AS tags,u.friendsCount
+                SELECT p.id AS post_id, p.user_id, p.post_in_html,p.created_at AS post_created_at, 
+				u.name, COALESCE(u.imageUrl,''), u.created_at, ARRAY_AGG(pt.tag) AS tags,u.friendsCount,
+				COALESCE(c.post_id, -1), COALESCE(c.content,''),COALESCE(c.created_at,'2024-03-24 04:51:25.503309'),
+				COALESCE(cu.id,-1), COALESCE(cu.name,''), COALESCE(cu.friendsCount,0), COALESCE(cu.imageUrl,'')
                 FROM posts p
                 LEFT JOIN post_tags pt ON p.id = pt.post_id
                 LEFT JOIN users u ON p.user_id = u.id
+				LEFT JOIN comments c ON p.id = c.post_id
+				LEFT JOIN users cu ON c.user_id = cu.id
                 WHERE p.user_id = $1
-                GROUP BY p.id, p.user_id, u.id
+                GROUP BY p.id, p.user_id, u.id, c.id, cu.id
                 
                 UNION ALL
                 
-                SELECT p.id AS post_id, p.user_id, p.post_in_html,p.created_at AS post_created_at, u.name, COALESCE(u.imageUrl,''), u.created_at, ARRAY_AGG(pt.tag) AS tags,u.friendsCount
-                FROM posts p
+                SELECT p.id AS post_id, p.user_id, p.post_in_html,p.created_at AS post_created_at,
+				u.name, COALESCE(u.imageUrl,''), u.created_at, ARRAY_AGG(pt.tag) AS tags,u.friendsCount,
+				COALESCE(c.post_id, -1), COALESCE(c.content,''),COALESCE(c.created_at,'2024-03-24 04:51:25.503309'),
+				COALESCE(cu.id,-1), COALESCE(cu.name,''), COALESCE(cu.friendsCount,0), COALESCE(cu.imageUrl,'')                
+				FROM posts p
                 LEFT JOIN post_tags pt ON p.id = pt.post_id
                 LEFT JOIN users u ON p.user_id = u.id
+				LEFT JOIN comments c ON p.id = c.post_id
+				LEFT JOIN users cu ON c.user_id = cu.id
                 WHERE EXISTS (
                     SELECT 1
                     FROM friends f
                     WHERE f.user_id = $1 AND f.friend_id = p.user_id
                 )
-                GROUP BY p.id, p.user_id, u.id
+                GROUP BY p.id, p.user_id, u.id, c.id, cu.id
             )
             SELECT *,
-                (SELECT COUNT(*) FROM UserPosts
+                (SELECT COUNT(DISTINCT post_id) FROM UserPosts
 				
 				
              `
@@ -201,39 +211,67 @@ func (d *dbRepository) GetAllPosts(ctx context.Context, req GetAllPostsPayload, 
 	defer rows.Close()
 	var total int
 	var postIds []string
+	var co_postId []string
+	var comments []comment.CommentResponse
 	for rows.Next() {
 		var post PostResponse
-		err = rows.Scan(&post.ID, &post.Creator.ID, &post.Post.PostInHtml, &post.Post.CreatedAt, &post.Creator.Name, &post.Creator.ImageUrl, &post.Creator.CreatedAt, &post.Post.Tags, &post.Creator.FriendsCount, &total)
+		var comment comment.CommentResponse
+		var c_postId string
+		err = rows.Scan(&post.ID, &post.Creator.ID, &post.Post.PostInHtml, &post.Post.CreatedAt, &post.Creator.Name, &post.Creator.ImageUrl, &post.Creator.CreatedAt, &post.Post.Tags, &post.Creator.FriendsCount,
+			&c_postId, &comment.Content, &comment.CreatedAt,
+			&comment.Creator.ID, &comment.Creator.Name, &comment.Creator.FriendsCount, &comment.Creator.ImageUrl,
+			&total)
 		if err != nil {
 			return nil, 0, err
 		}
 		res = append(res, post)
 		postIds = append(postIds, post.ID)
-	}
-
-	stmt = `SELECT c.content,c.created_at,c.user_id,u.name,COALESCE(u.imageUrl,''),u.friendsCount
-            FROM comments c 
-            LEFT JOIN users u on c.user_id = u.id
-            WHERE c.post_id=$1 
-            GROUP BY c.post_id,c.content,c.created_at,c.user_id,u.name,u.imageUrl,u.friendsCount
-            ORDER BY c.created_at DESC`
-	fmt.Println(postIds)
-
-	for i := 0; i < len(postIds); i++ {
-		rows, err := d.db.Pool.Query(ctx, stmt, postIds[i])
-		if err != nil {
-			return nil, 0, err
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var comment comment.CommentResponse
-			err = rows.Scan(&comment.Content, &comment.CreatedAt, &comment.Creator.ID, &comment.Creator.Name, &comment.Creator.ImageUrl, &comment.Creator.FriendsCount)
-			if err != nil {
-				return nil, 0, err
-			}
-			// fmt.Println(comment)
-			res[i].Comment = append(res[i].Comment, comment)
+		if c_postId != "-1" {
+			comments = append(comments, comment)
+			co_postId = append(co_postId, c_postId)
 		}
 	}
-	return &res, total, err
+	var new_res GetAllPostsResponse
+	idx_post := 0
+	for i := 0; i < len(res); i++ {
+		if res[i].ID == res[idx_post].ID {
+			new_res = append(new_res, res[i])
+			idx_post++
+		}
+	}
+	idx_post = 0
+	for i := 0; i < len(co_postId); i++ {
+		if co_postId[i] == new_res[idx_post].ID {
+			new_res[idx_post].Comment = append(new_res[idx_post].Comment, comments[i])
+		} else {
+			idx_post++
+			new_res[idx_post].Comment = append(new_res[idx_post].Comment, comments[i])
+		}
+	}
+
+	// stmt = `SELECT c.content,c.created_at,c.user_id,u.name,COALESCE(u.imageUrl,''),u.friendsCount
+	//         FROM comments c
+	//         LEFT JOIN users u on c.user_id = u.id
+	//         WHERE c.post_id=$1
+	//         GROUP BY c.post_id,c.content,c.created_at,c.user_id,u.name,u.imageUrl,u.friendsCount
+	//         ORDER BY c.created_at DESC`
+	// fmt.Println(postIds)
+
+	// for i := 0; i < len(postIds); i++ {
+	// 	rows, err := d.db.Pool.Query(ctx, stmt, postIds[i])
+	// 	if err != nil {
+	// 		return nil, 0, err
+	// 	}
+	// 	defer rows.Close()
+	// 	for rows.Next() {
+	// 		var comment comment.CommentResponse
+	// 		err = rows.Scan(&comment.Content, &comment.CreatedAt, &comment.Creator.ID, &comment.Creator.Name, &comment.Creator.ImageUrl, &comment.Creator.FriendsCount)
+	// 		if err != nil {
+	// 			return nil, 0, err
+	// 		}
+	// 		// fmt.Println(comment)
+	// 		res[i].Comment = append(res[i].Comment, comment)
+	// 	}
+	// }
+	return &new_res, total, err
 }
