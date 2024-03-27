@@ -13,7 +13,7 @@ import (
 type PostResponse struct {
 	ID      string                    `json:"postId"`
 	Post    SinglePost                `json:"post"`
-	Creator user.UserResponse         `json:"creator,omitempty"`
+	Creator user.RegisterResponse     `json:"creator,omitempty"`
 	Comment []comment.CommentResponse `json:"comments,omitempty"`
 }
 

@@ -11,6 +11,6 @@ type Comment struct {
 	PostID    int
 	UserID    int
 	Content   string
-	User      user.UserResponse
+	User      user.RegisterResponse
 	CreatedAt time.Time
 }

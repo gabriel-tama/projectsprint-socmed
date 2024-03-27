@@ -37,11 +37,11 @@ func GetPostgresURL() string {
 
 func Config(DATABASE_URL string) *pgxpool.Config {
 	const defaultMaxConns = int32(100)
-	const defaultMinConns = int32(0)
+	const defaultMinConns = int32(80)
 	const defaultMaxConnLifetime = time.Hour
 	const defaultMaxConnIdleTime = time.Minute * 30
 	const defaultHealthCheckPeriod = time.Minute
-	const defaultConnectTimeout = time.Second * 100
+	const defaultConnectTimeout = time.Second * 10
 
 	// Your own Database URL
 	dbConfig, err := pgxpool.ParseConfig(DATABASE_URL)

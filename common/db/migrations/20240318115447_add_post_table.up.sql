@@ -13,4 +13,5 @@ CREATE TABLE IF NOT EXISTS post_tags (
 
 CREATE INDEX IF NOT EXISTS post_id_idx  ON post_tags(post_id);
 CREATE INDEX IF NOT EXISTS user_id_idx  ON posts(user_id);
+CREATE INDEX IF NOT EXISTS post_in_html_idx  ON posts(post_in_html);
 
