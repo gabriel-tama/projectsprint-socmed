@@ -89,29 +89,29 @@ func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAll
 	var total int
 	stmt := `SELECT u.id, u.name, COALESCE(u.imageUrl,''),u.friendsCount,u.created_at,COUNT(*) OVER() FROM users u `
 	if req.OnlyFriend == true {
-		stmt += `WHERE u.id IN (SELECT friend_id FROM friends WHERE user_id=` + strconv.Itoa(userId) + `) `
+		stmt += ` WHERE u.id IN (SELECT friend_id FROM friends WHERE user_id=` + strconv.Itoa(userId) + `) `
 		if req.Search != "" {
-			stmt += `AND u.name LIKE '%` + req.Search + `%' `
+			stmt += ` AND u.name LIKE '%` + req.Search + `%' `
 		}
 	} else {
-		stmt += `WHERE u.id!=` + strconv.Itoa(userId)
+		stmt += ` WHERE u.id!=` + strconv.Itoa(userId)
 		if req.Search != "" {
-			stmt += `AND u.name LIKE '%` + req.Search + `%' `
+			stmt += ` AND u.name LIKE '%` + req.Search + `%' `
 		}
 	}
-	stmt += `GROUP BY u.id `
+	stmt += ` GROUP BY u.id `
 	if req.SortBy == "createdAt" {
-		stmt += `ORDER BY created_at `
+		stmt += ` ORDER BY created_at `
 	} else {
-		stmt += `ORDER BY friendsCount `
+		stmt += ` ORDER BY friendsCount `
 	}
 
 	if req.OrderBy == "asc" {
-		stmt += `ASC `
+		stmt += ` ASC `
 	} else {
-		stmt += `DESC `
+		stmt += ` DESC `
 	}
-	stmt += `LIMIT $1 OFFSET $2 `
+	stmt += ` LIMIT $1 OFFSET $2 `
 	fmt.Println(stmt)
 	rows, err := d.db.Pool.Query(ctx, stmt, req.Limit, req.Offset)
 
@@ -120,15 +120,15 @@ func (d *dbRepository) GetAllFriends(ctx context.Context, userId int, req GetAll
 	}
 
 	defer rows.Close()
+
 	for rows.Next() {
 		var friend FriendResponse
-		var tot int
-		err := rows.Scan(&friend.UserId, &friend.Name, &friend.ImageUrl, &friend.FriendCount, &friend.CreatedAt, &tot)
+		err := rows.Scan(&friend.UserId, &friend.Name, &friend.ImageUrl, &friend.FriendCount, &friend.CreatedAt, &total)
 		if err != nil {
 			return nil, 0, err
 		}
 		friendsList = append(friendsList, friend)
-		total += tot
+
 	}
 
 	return &friendsList, total, nil

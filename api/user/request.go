@@ -24,7 +24,7 @@ func (p CreateUserPayload) Validate() error {
 
 	// Validate CredentialValue
 	var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	var phoneRegex = regexp.MustCompile(`^\+\d{7,13}$`)
+	var phoneRegex = regexp.MustCompile(`^\+\d{6,12}$`)
 	if p.CredentialType == "email" {
 		if !emailRegex.MatchString(p.CredentialValue) {
 			return fmt.Errorf("invalid email format")
@@ -70,7 +70,7 @@ func (p LoginUserPayload) Validate() error {
 
 	// Validate CredentialValue
 	var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	var phoneRegex = regexp.MustCompile(`^\+\d{7,13}$`)
+	var phoneRegex = regexp.MustCompile(`^\+\d{6,12}$`)
 	if p.CredentialType == "email" {
 		if !emailRegex.MatchString(p.CredentialValue) {
 			return fmt.Errorf("invalid email format")

@@ -10,8 +10,8 @@ import (
 )
 
 type Service interface {
-	Create(ctx context.Context, req CreateUserPayload) (*UserResponse, error)
-	FindByCredential(ctx context.Context, req LoginUserPayload) (*UserResponse, error)
+	Create(ctx context.Context, req CreateUserPayload) (*RegisterResponse, error)
+	FindByCredential(ctx context.Context, req LoginUserPayload) (*LoginResponse, error)
 	LinkEmail(ctx *gin.Context, req LinkEmailPayload) error
 	LinkPhone(ctx *gin.Context, req LinkPhonePayload) error
 	UpdateAccount(ctx *gin.Context, req UpdateAccountPayload) error
@@ -26,7 +26,7 @@ func NewService(repository Repository, jwtService jwt.JWTService) Service {
 	return &userService{repository: repository, jwtService: jwtService}
 }
 
-func (s *userService) Create(ctx context.Context, req CreateUserPayload) (*UserResponse, error) {
+func (s *userService) Create(ctx context.Context, req CreateUserPayload) (*RegisterResponse, error) {
 
 	err := req.Validate()
 	if err != nil {
@@ -57,21 +57,21 @@ func (s *userService) Create(ctx context.Context, req CreateUserPayload) (*UserR
 	}
 
 	if req.CredentialByEmail() {
-		return &UserResponse{
+		return &RegisterResponse{
 			Name:        req.Name,
 			Email:       req.CredentialValue,
 			AccessToken: accessToken,
 		}, nil
 	}
 
-	return &UserResponse{
+	return &RegisterResponse{
 		Name:        req.Name,
 		Phone:       req.CredentialValue,
 		AccessToken: accessToken,
 	}, nil
 }
 
-func (s *userService) FindByCredential(ctx context.Context, req LoginUserPayload) (*UserResponse, error) {
+func (s *userService) FindByCredential(ctx context.Context, req LoginUserPayload) (*LoginResponse, error) {
 	err := req.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrValidationFailed, err)
@@ -103,7 +103,7 @@ func (s *userService) FindByCredential(ctx context.Context, req LoginUserPayload
 		return nil, err
 	}
 
-	return &UserResponse{
+	return &LoginResponse{
 		Name:        user.Name,
 		Phone:       user.PhoneNumberCredential,
 		Email:       user.EmailCredential,
